@@ -1,4 +1,4 @@
-name: CIname: Build Android APK
+name: Build Android APK
 
 on:
   push:
