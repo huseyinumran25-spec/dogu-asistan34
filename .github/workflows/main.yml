@@ -16,18 +16,26 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           
-      - name: Prepare Android SDK and Build
+      - name: Find and Build Android Project
         run: |
           export ANDROID_HOME=$ANDROID_SDK_ROOT
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
           
-          GRADLE_FILE=$(find . -name "build.gradle" -o -name "build.gradle.kts" -not -path "*/.*" | head -n 1)
-          PROJECT_DIR=$(dirname "$GRADLE_FILE")
+          # settings.gradle veya build.gradle dosyasını içeren klasörü kesin olarak bul
+          GRADLE_BUILD_FILE=$(find . -name "settings.gradle" -o -name "settings.gradle.kts" -o -name "build.gradle" -o -name "build.gradle.kts" -not -path "*/.*" | head -n 1)
+          
+          if [ -z "$GRADLE_BUILD_FILE" ]; then
+            echo "HATA: Hiçbir Gradle proje dosyası bulunamadı!"
+            exit 1
+          fi
+          
+          PROJECT_DIR=$(dirname "$GRADLE_BUILD_FILE")
+          echo "Bulunan proje dizini: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
+          # SDK yolunu proje dizinine yaz
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           
-          # Gereksiz debug kalabalığı olmadan doğrudan derleme
+          # Derlemeyi başlat
           if [ -f "./gradlew" ]; then
             chmod +x gradlew
             ./gradlew assembleDebug
