@@ -16,21 +16,53 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
               
-      - name: Ultimate Auto-Build
+      - name: Ultimate Auto-Build with Repos
         run: |
           export ANDROID_HOME=$ANDROID_SDK_ROOT
           
-          # Depoda proje dosyası yoksa otomatik eksiksiz şablon kur
+          # Eksik proje dosyalarını Android depo adresleriyle birlikte tam olarak oluştur
           if [ ! -f "build.gradle" ] && [ ! -f "app/build.gradle" ]; then
-            echo "Proje dosyaları eksik, otomatik şablon oluşturuluyor..."
+            echo "Android proje şablonu depolarla birlikte kuruluyor..."
             mkdir -p app/src/main
-            echo "plugins { id 'com.android.application' }" > build.gradle
+            
+            # root build.gradle
+            cat << 'EOF' > build.gradle
+            buildscript {
+                repositories {
+                    google()
+                    mavenCentral()
+                }
+            }
+            allprojects {
+                repositories {
+                    google()
+                    mavenCentral()
+                }
+            }
+            EOF
+            
+            # settings.gradle
             echo "include ':app'" > settings.gradle
-            mkdir -p app
-            echo "plugins { id 'com.android.application' }" > app/build.gradle
+            
+            # app/build.gradle
+            cat << 'EOF' > app/build.gradle
+            plugins {
+                id 'com.android.application'
+            }
+            android {
+                namespace 'com.dogu.asistan'
+                compileSdk 34
+                defaultConfig {
+                    applicationId "com.dogu.asistan"
+                    minSdk 24
+                    targetSdk 34
+                    versionCode 1
+                    versionName "1.0"
+                }
+            }
+            EOF
           fi
           
-          # Proje dizinini bul ve geç
           GRADLE_BUILD_FILE=$(find . -name "settings.gradle" -o -name "settings.gradle.kts" -o -name "build.gradle" -o -name "build.gradle.kts" -not -path "*/.*" | head -n 1)
           if [ -n "$GRADLE_BUILD_FILE" ]; then
             cd "$(dirname "$GRADLE_BUILD_FILE")"
