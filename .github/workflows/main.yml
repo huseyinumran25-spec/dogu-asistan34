@@ -9,63 +9,29 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v5
-        
+            
       - name: Set up JDK 17
         uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '17'
               
-      - name: Ultimate Auto-Build with Repos
+      - name: Simple Clean Build
         run: |
           export ANDROID_HOME=$ANDROID_SDK_ROOT
           
-          # Eksik proje dosyalarını Android depo adresleriyle birlikte tam olarak oluştur
-          if [ ! -f "build.gradle" ] && [ ! -f "app/build.gradle" ]; then
-            echo "Android proje şablonu depolarla birlikte kuruluyor..."
-            mkdir -p app/src/main
-            
-            # root build.gradle
-            cat << 'EOF' > build.gradle
-            buildscript {
-                repositories {
-                    google()
-                    mavenCentral()
-                }
-            }
-            allprojects {
-                repositories {
-                    google()
-                    mavenCentral()
-                }
-            }
-            EOF
-            
-            # settings.gradle
-            echo "include ':app'" > settings.gradle
-            
-            # app/build.gradle
-            cat << 'EOF' > app/build.gradle
-            plugins {
-                id 'com.android.application'
-            }
-            android {
-                namespace 'com.dogu.asistan'
-                compileSdk 34
-                defaultConfig {
-                    applicationId "com.dogu.asistan"
-                    minSdk 24
-                    targetSdk 34
-                    versionCode 1
-                    versionName "1.0"
-                }
-            }
-            EOF
+          if [ ! -f "build.gradle" ]; then
+            echo "allprojects { repositories { google(); mavenCentral() } }" > build.gradle
           fi
           
-          GRADLE_BUILD_FILE=$(find . -name "settings.gradle" -o -name "settings.gradle.kts" -o -name "build.gradle" -o -name "build.gradle.kts" -not -path "*/.*" | head -n 1)
-          if [ -n "$GRADLE_BUILD_FILE" ]; then
-            cd "$(dirname "$GRADLE_BUILD_FILE")"
+          if [ ! -f "settings.gradle" ]; then
+            echo "include ':app'" > settings.gradle
+          fi
+          
+          if [ ! -f "app/build.gradle" ]; then
+            mkdir -p app
+            echo "plugins { id 'com.android.application' }" > app/build.gradle
+            echo "android { namespace 'com.dogu.asistan'; compileSdk 34; defaultConfig { applicationId 'com.dogu.asistan'; minSdk 24; targetSdk 34 } }" >> app/build.gradle
           fi
           
           echo "sdk.dir=$ANDROID_HOME" > local.properties
@@ -76,7 +42,7 @@ jobs:
           else
             gradle assembleDebug
           fi
-          
+              
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
