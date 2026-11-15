@@ -18,21 +18,23 @@ jobs:
           
       - name: Prepare Android SDK and Build
         run: |
-          # Android SDK yolunu otomatik tanımla
-          echo "sdk.dir=$ANDROID_HOME" > local.permissions || echo "sdk.dir=$ANDROID_HOME" > local.properties
+          # Android SDK yolunu netleştir
+          export ANDROID_HOME=$ANDROID_SDK_ROOT
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           
           GRADLE_FILE=$(find . -name "build.gradle" -o -name "build.gradle.kts" -not -path "*/.*" | head -n 1)
           PROJECT_DIR=$(dirname "$GRADLE_FILE")
           cd "$PROJECT_DIR"
           
-          # local.properties dosyasını proje klasörüne de kopyala
+          # Proje klasörüne de local.properties yaz
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           
+          # Gradle'ı çalıştır, hata verirse tam dökümü göster
           if [ -f "./gradlew" ]; then
             chmod +x gradlew
-            ./gradlew assembleDebug --stacktrace
+            ./gradlew assembleDebug --stacktrace --info || ./gradlew assembleDebug --debug
           else
-            gradle assembleDebug --stacktrace
+            gradle assembleDebug --stacktrace --info || gradle assembleDebug --debug
           fi
           
       - name: Upload APK Artifact
