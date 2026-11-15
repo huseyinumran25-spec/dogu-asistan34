@@ -16,36 +16,23 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           
-      - name: Auto-Detect and Fix Project Structure
+      - name: Prepare Android SDK and Build
         run: |
-          echo "Proje dizinleri ve Gradle dosyaları taranıyor..."
+          # Android SDK yolunu otomatik tanımla
+          echo "sdk.dir=$ANDROID_HOME" > local.permissions || echo "sdk.dir=$ANDROID_HOME" > local.properties
           
-          # build.gradle dosyasını bul
           GRADLE_FILE=$(find . -name "build.gradle" -o -name "build.gradle.kts" -not -path "*/.*" | head -n 1)
-          if [ -z "$GRADLE_FILE" ]; then
-            echo "HATA: build.gradle bulunamadı! Otomatik şablon oluşturuluyor..."
-            mkdir -p app/src/main
-            echo "plugins { id 'com.android.application' }" > build.gradle
-          fi
-          
           PROJECT_DIR=$(dirname "$GRADLE_FILE")
-          echo "Tespit edilen proje dizini: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
-          # Eksik gradlew dosyası varsa yetki ver
+          # local.properties dosyasını proje klasörüne de kopyala
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          
           if [ -f "./gradlew" ]; then
             chmod +x gradlew
-          fi
-          
-      - name: Build Android APK with Auto-Retry
-        run: |
-          GRADLE_FILE=$(find . -name "build.gradle" -o -name "build.gradle.kts" -not -path "*/.*" | head -n 1)
-          cd "$(dirname "$GRADLE_FILE")"
-          
-          if [ -f "./gradlew" ]; then
-            ./gradlew assembleDebug --stacktrace || ./gradlew assembleDebug --info
+            ./gradlew assembleDebug --stacktrace
           else
-            gradle assembleDebug --stacktrace || gradle assembleDebug --info
+            gradle assembleDebug --stacktrace
           fi
           
       - name: Upload APK Artifact
